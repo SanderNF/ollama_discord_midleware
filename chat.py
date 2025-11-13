@@ -80,19 +80,26 @@ async def send_prompt_http(prompt, model="qwen3-coder:30b", callback=None):
                 total_words += w
                 total_tokens += t
     finally:
-        if start is None:
-            print("no response")
-            return None
-        
-        elapsed = time.time() - start
-        if elapsed <= 0:
-            elapsed = 1e-6
-        wpm = (total_words / elapsed) * 60
-        tps = (total_tokens / elapsed)
-        print("\n\n--- stats ---")
-        print(f'time elapsed: {elapsed:.3f} s')
-        print(f'words prodused: {total_words}, WPM {wpm:.1f}')
-        print(f'Tokens (heuristic): {total_tokens}, Tokens/s: {tps:.2f}')
+        # ensure the response is closed but do not return from inside finally
+        if 'resp' in locals():
+            try:
+                resp.close()
+            except Exception:
+                pass
+
+    if start is None:
+        print("no response")
+        return None
+
+    elapsed = time.time() - start
+    if elapsed <= 0:
+        elapsed = 1e-6
+    wpm = (total_words / elapsed) * 60
+    tps = (total_tokens / elapsed)
+    print("\n\n--- stats ---")
+    print(f'time elapsed: {elapsed:.3f} s')
+    print(f'words prodused: {total_words}, WPM {wpm:.1f}')
+    print(f'Tokens (heuristic): {total_tokens}, Tokens/s: {tps:.2f}')
     return {
         "text": total_text,
         "seconds": elapsed,
