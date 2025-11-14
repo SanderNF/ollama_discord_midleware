@@ -71,6 +71,7 @@ async def grok_command(interaction: discord.Interaction, prompt: str):
     await handle_grok_command(prompt, interaction=interaction, is_slash=True)
 
 async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None):
+    print(prompt, message)
     # For slash commands, get the channel and user from interaction
     if is_slash:
         channel = interaction.channel
@@ -99,7 +100,10 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
     try:
         response = await send_prompt_http(prompt, callback=lambda content: generating_msg.edit(content=content))
         text = response.get('text', '')
-        info = response.get('seconds', 0)
+        evalTime = response.get('seconds_eval', 0)
+        promptEvalTime = response.get('seconds_prompt_eval', 0)
+        loadTime = response.get('seconds_load', 0)
+        totalTime = response.get('seconds_total', 0)
         words = response.get('words', 0)
         tokens = response.get('tokens', 0)
         wpm = response.get('wpm', 0)
@@ -107,7 +111,10 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
 
         formatted_response = (
             f"{text}\n\n\n"
-            f"> Seconds: {info:.2f}\n"
+            f"> Total time: {totalTime:.2f}\n"
+            f"> Model load time: {loadTime:.2f}\n"
+            f"> Read prompt time: {promptEvalTime:.2f}\n"
+            f"> Generation time: {evalTime:.2f}\n"
             f"> Words: {words}\n"
             f"> Tokens: {tokens}\n"
             f"> WPM: {wpm:.2f}\n"
@@ -117,13 +124,10 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
         )
 
         await generating_msg.edit(content=formatted_response)
-
     except Exception as e:
-        await generating_msg.edit(content=f"Error: {str(e)}")
-
-    except Exception as e:
+        print(e)
         # Handle any errors
-        await generating_msg.edit(content=f"Error: {str(e)}")
+        await generating_msg.edit(content=f"# Error: \n```\n{str(e)}\n```")
 
 # Run the bot with your token
 bot.run(bot_token)
