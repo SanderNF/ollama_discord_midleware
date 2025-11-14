@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from chat import send_prompt_http
+from AI_Tools import preRunAgent
 import os
 from pathlib import Path
 
@@ -68,6 +69,13 @@ async def on_message(message):
 @bot.tree.command(name="grok", description="Ask Grok a question")
 async def grok_command(interaction: discord.Interaction, prompt: str):
     await interaction.response.defer()
+    await handle_grok_command(prompt, interaction=interaction, is_slash=True)
+
+@bot.tree.command(name="grok-search", description="Ask Grok a question")
+async def grok_seach_command(interaction: discord.Interaction, prompt: str):
+    await interaction.response.defer()
+    generating_msg = await interaction.followup.send("preRunAgent...")
+    prompt += f'\n\npre-run Agent returned: {await preRunAgent(prompt,callback=lambda content: generating_msg.edit(content=content))}'
     await handle_grok_command(prompt, interaction=interaction, is_slash=True)
 
 async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None):
