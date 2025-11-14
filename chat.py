@@ -49,7 +49,7 @@ def count_words_and_tokens(text):
 def saveOnDone(data):
     if data["done"]:
         print("streaming is done")
-        print(data)
+        #print(data)
         responseInfo.returned_data = data
         for key, value in data.items():
             if hasattr(responseInfo, key):

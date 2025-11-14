@@ -71,7 +71,7 @@ async def grok_command(interaction: discord.Interaction, prompt: str):
     await handle_grok_command(prompt, interaction=interaction, is_slash=True)
 
 async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None):
-    print(prompt, message)
+    #print(prompt, message)
     # For slash commands, get the channel and user from interaction
     if is_slash:
         channel = interaction.channel
