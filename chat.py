@@ -58,9 +58,10 @@ def saveOnDone(data):
         #print("still streaming")
         return
 
-async def send_prompt_http(prompt, model="qwen3-coder:30b", callback=None):
+async def send_prompt_http(prompt, model, callback=None):
     streamingIndex = 0
     payload = {"model": model, "prompt": prompt, "stream": True}
+    print(payload)
     try:
         resp = requests.post(GENERATE_URL, json=payload, stream=True, timeout=60)
     except Exception as e:

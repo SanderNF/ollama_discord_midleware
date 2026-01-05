@@ -67,9 +67,13 @@ async def on_message(message):
         await handle_grok_command(None, message=message, is_slash=False)
 
 @bot.tree.command(name="grok", description="Ask Grok a question")
-async def grok_command(interaction: discord.Interaction, prompt: str):
+async def grok_command(interaction: discord.Interaction, prompt: str, model: str = None):
     await interaction.response.defer()
-    await handle_grok_command(prompt, interaction=interaction, is_slash=True)
+    model = model or "grok-v7"
+    print(model)
+    await handle_grok_command(prompt, interaction=interaction, is_slash=True, model=model)
+
+
 
 @bot.tree.command(name="grok-search", description="Ask Grok a question")
 async def grok_seach_command(interaction: discord.Interaction, prompt: str):
@@ -78,7 +82,7 @@ async def grok_seach_command(interaction: discord.Interaction, prompt: str):
     prompt += f'\n\npre-run Agent returned: {await preRunAgent(prompt,callback=lambda content: generating_msg.edit(content=content))}'
     await handle_grok_command(prompt, interaction=interaction, is_slash=True)
 
-async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None):
+async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None, model="grok-v7"):
     #print(prompt, message)
     # For slash commands, get the channel and user from interaction
     if is_slash:
@@ -106,7 +110,7 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
     Streaming.temp_response = ""
 
     try:
-        response = await send_prompt_http(prompt, callback=lambda content: generating_msg.edit(content=content))
+        response = await send_prompt_http(prompt, model, callback=lambda content: generating_msg.edit(content=content))
         text = response.get('text', '')
         evalTime = response.get('seconds_eval', 0)
         promptEvalTime = response.get('seconds_prompt_eval', 0)
@@ -128,7 +132,7 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
             f"> WPM: {wpm:.2f}\n"
             f"> TPS: {tps:.2f}\n"
             f"> Device: CPU\n"
-            f"> Model: qwen3-coder:30b\n"
+            f"> Model: {model}\n"
         )
 
         await generating_msg.edit(content=formatted_response)
