@@ -3,7 +3,7 @@ import time, re, sys, json, requests, argparse
 
 
 OLLAMA_BASE_URL = "http://192.168.86.114:11434"
-GENERATE_URL = f'{OLLAMA_BASE_URL}/api/generate'
+GENERATE_URL = f'{OLLAMA_BASE_URL}/api/chat'
 
 
 class responseInfo:
@@ -22,23 +22,33 @@ class responseInfo:
     context: object = []
 
 
+#def extract_text(obj):
+#    if obj is None:
+#        return ""
+#    if isinstance(obj, str):
+#        return obj
+#    if isinstance(obj, dict):
+#        for k in ("content", "text", "message", "response"):
+#           if k in obj and isinstance(obj[k], (str,)):
+#               return obj[k]
+#       
+#       s = ""
+#       for v in obj.values():
+#           s += extract_text(v)
+#       return s
+#   if isinstance(obj, list):
+#       return "".join(extract_text(v) for v in obj)
+#   return ""
 def extract_text(obj):
+    print(f'obj: {obj}')
+    for i in obj:
+        print(i)
+    print(obj["message"])
     if obj is None:
         return ""
     if isinstance(obj, str):
-        return obj
-    if isinstance(obj, dict):
-        for k in ("content", "text", "message", "response"):
-            if k in obj and isinstance(obj[k], (str,)):
-                return obj[k]
-        
-        s = ""
-        for v in obj.values():
-            s += extract_text(v)
-        return s
-    if isinstance(obj, list):
-        return "".join(extract_text(v) for v in obj)
-    return ""
+        print("is string")
+    return obj["message"]["content"]
 
 def count_words_and_tokens(text):
     words = re.findall(r"\b\w+\b", text)
@@ -58,12 +68,22 @@ def saveOnDone(data):
         #print("still streaming")
         return
 
-async def send_prompt_http(prompt, model, callback=None):
+async def send_prompt_http(prompt, model, callback=None, images=[]):
     streamingIndex = 0
-    payload = {"model": model, "prompt": prompt, "stream": True}
+    payload = {
+        "model": model, 
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt,
+                "images": images
+            }
+        ],
+        "stream": True
+        }
     print(payload)
     try:
-        resp = requests.post(GENERATE_URL, json=payload, stream=True, timeout=60)
+        resp = requests.post(GENERATE_URL, json=payload, stream=True, timeout=240)
     except Exception as e:
         print(f'HTTP request faild: {e}')
         return None
@@ -92,7 +112,7 @@ async def send_prompt_http(prompt, model, callback=None):
             chunk = ""
             try:
                 j = json.loads(line)
-                #print(j)
+                print(j)
                 saveOnDone(j)
                 chunk = extract_text(j)
             except Exception:

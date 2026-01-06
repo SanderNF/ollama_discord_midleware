@@ -4,6 +4,8 @@ from chat import send_prompt_http
 from AI_Tools import preRunAgent
 import os
 from pathlib import Path
+import base64
+import requests
 
 # Create .env file if it doesn't exist
 env_file = Path('.env')
@@ -46,6 +48,10 @@ def streamingCallback(chunk):
     if Streaming.edit_msg:
         Streaming.edit_msg(content=f'{Streaming.temp_response}')
 
+
+def get_as_base64(url):
+    return str(base64.b64encode(requests.get(url).content))[2:-1]
+
 @bot.event
 async def on_ready():
     print(f'{bot.user} has logged in!')
@@ -64,7 +70,14 @@ async def on_message(message):
 
     # Check if message starts with @grok
     if message.content.startswith('@grok '):
-        await handle_grok_command(None, message=message, is_slash=False)
+        attachments = message.attachments
+        images = []
+        print(attachments)
+        for i in attachments:
+            print(i)
+            #print(get_as_base64(i.url))
+            images.append(get_as_base64(i.url))
+        await handle_grok_command(None, message=message, is_slash=False, images=images)
 
 @bot.tree.command(name="grok", description="Ask Grok a question")
 async def grok_command(interaction: discord.Interaction, prompt: str, model: str = None):
@@ -82,7 +95,9 @@ async def grok_seach_command(interaction: discord.Interaction, prompt: str):
     prompt += f'\n\npre-run Agent returned: {await preRunAgent(prompt,callback=lambda content: generating_msg.edit(content=content))}'
     await handle_grok_command(prompt, interaction=interaction, is_slash=True)
 
-async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None, model="grok-v7"):
+async def handle_grok_command(prompt, message=None, is_slash=False, interaction=None, model="grok-v7", images=[]):
+    if images != []:
+        model = "moondream:1.8b"
     #print(prompt, message)
     # For slash commands, get the channel and user from interaction
     if is_slash:
@@ -110,7 +125,7 @@ async def handle_grok_command(prompt, message=None, is_slash=False, interaction=
     Streaming.temp_response = ""
 
     try:
-        response = await send_prompt_http(prompt, model, callback=lambda content: generating_msg.edit(content=content))
+        response = await send_prompt_http(prompt, model, callback=lambda content: generating_msg.edit(content=content), images=images)
         text = response.get('text', '')
         evalTime = response.get('seconds_eval', 0)
         promptEvalTime = response.get('seconds_prompt_eval', 0)
